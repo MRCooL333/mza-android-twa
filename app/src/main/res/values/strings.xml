@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">مزا</string>
+    <string name="app_name">مزور</string>
 
     <!-- Must match a file hosted at https://mzaai.ir/.well-known/assetlinks.json
          with the release signing certificate's SHA256 fingerprint. -->
