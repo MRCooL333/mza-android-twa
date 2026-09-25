@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مزا</string>
+
+    <!-- Must match a file hosted at https://mzaai.ir/.well-known/assetlinks.json
+         with the release signing certificate's SHA256 fingerprint. -->
+    <string name="asset_statements">
+        [{
+          \"relation\": [\"delegate_permission/common.handle_all_urls\"],
+          \"target\": {
+            \"namespace\": \"web\",
+            \"site\": \"https://mzaai.ir\"
+          }
+        }]
+    </string>
+</resources>
