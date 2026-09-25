@@ -13,26 +13,56 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Build APK
-        run: gradle assembleDebug
+      # ---- Optional signing step -------------------------------------
+      # Only runs if you've added the four secrets below in
+      # GitHub → Settings → Secrets and variables → Actions.
+      # If they're missing, the build falls back to the debug key,
+      # which is fine for testing but NOT for a real Play Store release
+      # or for the Digital Asset Links (assetlinks.json) verification.
+      - name: Decode signing keystore
+        if: ${{ secrets.MZA_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.MZA_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "MZA_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "MZA_KEYSTORE_PASSWORD=${{ secrets.MZA_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "MZA_KEY_ALIAS=${{ secrets.MZA_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "MZA_KEY_PASSWORD=${{ secrets.MZA_KEY_PASSWORD }}" >> "$GITHUB_ENV"
 
-      - name: Upload APK artifact
+      - name: Print SHA256 fingerprint (for assetlinks.json)
+        if: ${{ secrets.MZA_KEYSTORE_BASE64 != '' }}
+        run: |
+          keytool -list -v \
+            -keystore "$MZA_KEYSTORE_PATH" \
+            -alias "$MZA_KEY_ALIAS" \
+            -storepass "$MZA_KEYSTORE_PASSWORD" | grep "SHA256:"
+
+      - name: Build release APK
+        run: gradle :app:assembleRelease --no-daemon
+
+      - name: Build release AAB (for Play Store)
+        run: gradle :app:bundleRelease --no-daemon
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: mza-release-apk
+          path: app/build/outputs/apk/release/*.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: mza-release-aab
+          path: app/build/outputs/bundle/release/*.aab
